@@ -437,3 +437,66 @@ DHCP hex data:
   incomplete/malformed DHCP data (len: 34)
   001c   remainder: 50 41 4e 44 41 00
 ```
+ftp://192.168.8.253/DHCP/dhcperfcli_install-0.0.0.001.tgz
+
+
+版本0.0.0.001
+
+运行环境:
+ubuntu 16.04 64位
+
+安装步骤:
+source ./dhcperfcli_install.sh
+
+命令使用帮助:
+一. mac op82 是递增的命令:
+echo "DHCP-Client-Hardware-Address=01:41:4e:44:41:00, DHCP-Transaction-Id=362, DHCP-Agent-Remote-Id=0x2222222222222222" | dhcperfcli  -p 200  -L 60  -t 0.1  -s 2   -T   -g 192.168.24.3 192.168.27.135  dora
+参数详解:
+DHCP-Client-Hardware-Address dhcp 报文起始mac地址,这个会依次递增
+DHCP-Transaction-Id 会话ID,这个会依次递增
+DHCP-Agent-Remote-Id 是自定义OPTION82,这个会依次递增
+-p 200  是启动200个client 发包,数字少会影响性能测试
+-L 60   是运行60秒
+-t 0.1  是等待结果的超时时间,超时默认是3s,这个会影响性能测试
+-s 2    是每2秒输出一次结果
+-T      是使用模块,用这个参数mac 会话ID OPTION82会递增
+-g 后面第一个IP是中继设备的接口IP地址 第二个IP地址是dhcp server接口IP地址
+dora 是测试discover offer request ack 完整的dhcp四个步骤
+
+二. mac op82 是固定的命令:
+echo "DHCP-Client-Hardware-Address=00:41:4e:44:41:00, DHCP-Transaction-Id=362, DHCP-Agent-Remote-Id=0x2222" | dhcperfcli -c 100 -r 1   -L 60  -t 0.1  -s 2      -g 192.168.24.3 192.168.27.135  dora
+参数详解:
+不用-T参数,是发送固定的mac op82等属性
+-c 100 一共发送100个session
+-r 1   一秒发送一个session
+
+命令详细说明,参考官网:
+https://github.com/nchaigne/dhcperfcli
+可以自定义的dhcp属性列表参考/opt/freeradius/4.0.x/share/freeradius/dictionary.dhcpv4
+
+
+
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import os
+import sys
+
+if len(sys.argv) != 3:
+	print 'error !!! argv must be 2'
+	print './radius_test.py username password'
+	exit()
+
+
+cmd = './t ' + sys.argv[1] + ' ' + sys.argv[2]
+#print cmd
+
+process = os.popen(cmd) # return file
+output = process.read()
+process.close()
+#print output
+
+cmd = 'echo \"DHCP-Client-Hardware-Address=00:00:00:00:00:20, DHCP-Transaction-Id=362, DHCP-Agent-Remote-Id=0x2222, DHCP-Agent-Circuit-Id=0x3333, DHCP-Vendor-Class-Identifier=0x' + output +'\" | dhcperfcli -c 1000000 -r 1   -L 600000  -t 0.1  -s 2      -g 192.168.24.3 192.168.27.136  dora'
+#print cmd
+
+os.system(cmd)
